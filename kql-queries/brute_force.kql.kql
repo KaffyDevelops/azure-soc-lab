@@ -1,0 +1,6 @@
+// Detect brute force attacks on Azure AD
+SigninLogs
+| where ResultType == "50126" // Invalid username/password
+| summarize FailedAttempts = count() by IPAddress, UserPrincipalName
+| where FailedAttempts > 5
+| project IPAddress, UserPrincipalName, FailedAttempts
