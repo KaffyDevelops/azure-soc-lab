@@ -1,0 +1,92 @@
+// INC-001 investigation queries
+// Replace the placeholder UPN before running.
+// These queries are for triage and validation. They do not replace DET-001.
+
+// -----------------------------------------------------------------------------
+// Q1: Confirm recent failed sign-ins for the lab user
+// -----------------------------------------------------------------------------
+let TestUser = "replace-with-lab-user-upn";
+SigninLogs
+| where TimeGenerated >= ago(2h)
+| where UserPrincipalName =~ TestUser
+| where ResultType == "50126"
+| project TimeGenerated,
+          UserPrincipalName,
+          IPAddress,
+          ResultType,
+          ResultDescription,
+          AppDisplayName,
+          ClientAppUsed,
+          ConditionalAccessStatus,
+          Location
+| order by TimeGenerated asc
+
+// -----------------------------------------------------------------------------
+// Q2: Build a chronological sign-in timeline for the lab user
+// Includes failures and successes so the analyst can see what happened after the
+// failed attempts.
+// -----------------------------------------------------------------------------
+let TestUser = "replace-with-lab-user-upn";
+SigninLogs
+| where TimeGenerated >= ago(2h)
+| where UserPrincipalName =~ TestUser
+| extend Outcome = iff(ResultType == "0", "Success", "Failure")
+| project TimeGenerated,
+          Outcome,
+          ResultType,
+          ResultDescription,
+          IPAddress,
+          AppDisplayName,
+          ClientAppUsed,
+          ConditionalAccessStatus,
+          Location
+| order by TimeGenerated asc
+
+// -----------------------------------------------------------------------------
+// Q3: Count failures and successes by source IP for the lab user
+// Useful for validating whether a successful authentication followed the failures.
+// -----------------------------------------------------------------------------
+let TestUser = "replace-with-lab-user-upn";
+SigninLogs
+| where TimeGenerated >= ago(2h)
+| where UserPrincipalName =~ TestUser
+| summarize FailedAttempts = countif(ResultType == "50126"),
+            SuccessfulSignIns = countif(ResultType == "0"),
+            FirstSeen = min(TimeGenerated),
+            LastSeen = max(TimeGenerated)
+  by IPAddress
+| order by FailedAttempts desc
+
+// -----------------------------------------------------------------------------
+// Q4: Check whether the same source IP generated failures against other users
+// Replace the placeholder IP with the source observed in E01/E03.
+// This helps distinguish a single-user brute-force pattern from broader password
+// spraying or unrelated activity.
+// -----------------------------------------------------------------------------
+let TestIP = "replace-with-source-ip";
+SigninLogs
+| where TimeGenerated >= ago(2h)
+| where IPAddress == TestIP
+| where ResultType == "50126"
+| summarize FailedAttempts = count(),
+            TargetedUsers = dcount(UserPrincipalName),
+            Users = make_set(UserPrincipalName, 20),
+            FirstSeen = min(TimeGenerated),
+            LastSeen = max(TimeGenerated)
+| project TestIP = TestIP,
+          FailedAttempts,
+          TargetedUsers,
+          Users,
+          FirstSeen,
+          LastSeen
+
+// -----------------------------------------------------------------------------
+// Q5: DET-001 as implemented in the repository
+// This is reproduced here only to make the validation runbook self-contained.
+// -----------------------------------------------------------------------------
+SigninLogs
+| where ResultType == "50126"
+| summarize FailedAttempts = count() by IPAddress, UserPrincipalName
+| where FailedAttempts > 5
+| project IPAddress, UserPrincipalName, FailedAttempts
+| order by FailedAttempts desc
