@@ -1,0 +1,11 @@
+// DET-001: Repeated failed Microsoft Entra ID sign-in attempts
+// Data source: SigninLogs
+// Purpose: Identify repeated invalid username/password failures grouped by source IP and user.
+// Note: Thresholds must be tuned for the environment before production use.
+
+SigninLogs
+| where ResultType == "50126"
+| summarize FailedAttempts = count() by IPAddress, UserPrincipalName
+| where FailedAttempts > 5
+| project IPAddress, UserPrincipalName, FailedAttempts
+| order by FailedAttempts desc
