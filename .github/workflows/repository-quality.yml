@@ -1,0 +1,89 @@
+name: Repository Quality
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  validate-security-evidence:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Verify required evidence files
+        shell: bash
+        run: |
+          set -euo pipefail
+          required_files=(
+            "README.md"
+            "SECURITY.md"
+            "CONTRIBUTING.md"
+            "docs/lab-architecture.md"
+            "docs/evidence-standard.md"
+            "docs/validation-plan.md"
+            "detections/DET-001-brute-force.md"
+            "kql-queries/brute-force.kql"
+          )
+
+          for file in "${required_files[@]}"; do
+            if [[ ! -s "$file" ]]; then
+              echo "Required evidence file is missing or empty: $file"
+              exit 1
+            fi
+          done
+
+      - name: Enforce KQL filename hygiene
+        shell: bash
+        run: |
+          set -euo pipefail
+          if find kql-queries -type f -name '*.kql.kql' | grep -q .; then
+            echo "KQL files must use a single .kql extension."
+            find kql-queries -type f -name '*.kql.kql'
+            exit 1
+          fi
+
+          if ! find kql-queries -type f -name '*.kql' | grep -q .; then
+            echo "No KQL detection files were found."
+            exit 1
+          fi
+
+      - name: Verify detection documentation sections
+        shell: bash
+        run: |
+          set -euo pipefail
+          detection="detections/DET-001-brute-force.md"
+          required_sections=(
+            "## Security Objective"
+            "## Data Source"
+            "## Detection Logic"
+            "## Analyst Triage Questions"
+            "## Potential False Positives"
+            "## Response Guidance"
+            "## Limitations"
+          )
+
+          for section in "${required_sections[@]}"; do
+            if ! grep -Fq "$section" "$detection"; then
+              echo "Missing required detection section: $section"
+              exit 1
+            fi
+          done
+
+      - name: Confirm public-lab disclosure
+        shell: bash
+        run: |
+          set -euo pipefail
+          if ! grep -Fiq "portfolio lab" README.md; then
+            echo "README should explicitly identify the project as a portfolio lab."
+            exit 1
+          fi
+
+      - name: Quality checks passed
+        run: echo "Repository evidence and structure checks passed."
