@@ -1,5 +1,7 @@
 # Microsoft Sentinel SOC & Threat Detection Lab
 
+[![Repository Quality](https://github.com/KaffyDevelops/azure-soc-lab/actions/workflows/repository-quality.yml/badge.svg)](https://github.com/KaffyDevelops/azure-soc-lab/actions/workflows/repository-quality.yml)
+
 > **Project type:** Independent hands-on cloud security lab  
 > **Focus:** SIEM, KQL detection engineering, identity telemetry, incident investigation and evidence-led response  
 > **Platform:** Microsoft Azure  
@@ -108,6 +110,9 @@ The screenshots are retained as supporting evidence, but the long-term standard 
 
 ```text
 azure-soc-lab/
+├── .github/
+│   └── workflows/
+│       └── repository-quality.yml
 ├── README.md
 ├── images/
 │   ├── incident-alert.png
@@ -134,6 +139,7 @@ azure-soc-lab/
 - Kusto Query Language (KQL)
 - Cloud identity telemetry
 - MITRE ATT&CK mapping
+- GitHub Actions
 
 ## What This Project Demonstrates
 
@@ -149,6 +155,7 @@ This repository is intended to demonstrate practical capability in:
 - threat mapping
 - false-positive analysis
 - remediation thinking
+- repository quality automation
 
 ## Validation Standard
 
@@ -190,7 +197,7 @@ Those limitations are documented deliberately so the project shows both technica
 - Add query tuning and false-positive notes
 - Map detections to MITRE ATT&CK techniques
 - Add reusable investigation queries
-- Introduce automated KQL/static validation where practical
+- Expand automated repository quality and detection validation checks
 - Link each implemented detection to the corresponding portfolio case study
 
 ## Portfolio
